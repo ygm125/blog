@@ -1,7 +1,7 @@
 ---
 Layout: Layout
 title: 实现一个类 Vue 的 MVVM 框架
-tags: [vue, javascript]
+tags: [vue, javascript, mvvm]
 ---
 
 Vue 一个 MVVM 框架、一个响应式的组件系统，通过把页面抽象成一个个组件来增加复用性、降低复杂性
@@ -29,34 +29,45 @@ Vue 2.0 底层基于 Snabbdom 这个 Virtual DOM 做了优化与整合
 这个库的主要特色是简单、模块化方便扩展与出色的性能
 
 一个简单例子
-``` js
-var snabbdom = require('snabbdom');
-var patch = snabbdom.init([ // Init patch function with chosen modules
-  require('snabbdom/modules/class').default, // makes it easy to toggle classes
-  require('snabbdom/modules/props').default, // for setting properties on DOM elements
-  require('snabbdom/modules/style').default, // handles styling on elements with support for animations
-  require('snabbdom/modules/eventlisteners').default, // attaches event listeners
+
+```js
+var snabbdom = require("snabbdom");
+var patch = snabbdom.init([
+  // Init patch function with chosen modules
+  require("snabbdom/modules/class").default, // makes it easy to toggle classes
+  require("snabbdom/modules/props").default, // for setting properties on DOM elements
+  require("snabbdom/modules/style").default, // handles styling on elements with support for animations
+  require("snabbdom/modules/eventlisteners").default // attaches event listeners
 ]);
-var h = require('snabbdom/h').default; // helper function for creating vnodes
+var h = require("snabbdom/h").default; // helper function for creating vnodes
 
-var container = document.getElementById('container');
+var container = document.getElementById("container");
 
-var vnode = h('div#container.two.classes', {on: {click: someFn}}, [
-  h('span', {style: {fontWeight: 'bold'}}, 'This is bold'),
-  ' and this is just normal text',
-  h('a', {props: {href: '/foo'}}, 'I\'ll take you places!')
+var vnode = h("div#container.two.classes", { on: { click: someFn } }, [
+  h("span", { style: { fontWeight: "bold" } }, "This is bold"),
+  " and this is just normal text",
+  h("a", { props: { href: "/foo" } }, "I'll take you places!")
 ]);
 // Patch into empty DOM element – this modifies the DOM as a side effect
 patch(container, vnode);
 
-var newVnode = h('div#container.two.classes', {on: {click: anotherEventHandler}}, [
-  h('span', {style: {fontWeight: 'normal', fontStyle: 'italic'}}, 'This is now italic type'),
-  ' and this is still just normal text',
-  h('a', {props: {href: '/bar'}}, 'I\'ll take you places!')
-]);
+var newVnode = h(
+  "div#container.two.classes",
+  { on: { click: anotherEventHandler } },
+  [
+    h(
+      "span",
+      { style: { fontWeight: "normal", fontStyle: "italic" } },
+      "This is now italic type"
+    ),
+    " and this is still just normal text",
+    h("a", { props: { href: "/bar" } }, "I'll take you places!")
+  ]
+);
 // Second `patch` invocation
 patch(vnode, newVnode); // Snabbdom efficiently updates the old view to the new state
 ```
+
 不难看出 patch 就是一个模块化的功能聚合，你也可以根据核心的 Hook 机制来提供自己的功能模块
 
 然后通过 snabbdom/h 来创建 vnodes，最后用 patch 做更新处理
@@ -70,58 +81,62 @@ patch(vnode, newVnode); // Snabbdom efficiently updates the old view to the new 
 Vue 2.0 的 Parse 原型基于 John Resig 的 HTML Parser，这个 Parser 写的很小巧，可以到这里了解 http://ejohn.org/blog/pure-ja...
 
 基本的 HTML 解析用法
-``` js
+
+```js
 var results = "";
-        
+
 HTMLParser(html, {
-  start: function( tag, attrs, unary ) {
+  start: function(tag, attrs, unary) {
     results += "<" + tag;
 
-    for ( var i = 0; i < attrs.length; i++ )
+    for (var i = 0; i < attrs.length; i++)
       results += " " + attrs[i].name + '="' + attrs[i].escaped + '"';
 
     results += (unary ? "/" : "") + ">";
   },
-  end: function( tag ) {
+  end: function(tag) {
     results += "</" + tag + ">";
   },
-  chars: function( text ) {
+  chars: function(text) {
     results += text;
   },
-  comment: function( text ) {
+  comment: function(text) {
     results += "<!--" + text + "-->";
   }
 });
 
 return results;
 ```
+
 可以看出它把 HTML 解析后对应的节点数据都传入了处理函数，Vue 在它的基础上做了升级与优化处理，在拿到对应的节点数据后做一些自己的解析处理，如 分析 v-if、v-for、v-on 等属性做指令处理，也就出来了 Vue 的模板系统~
 
 下面在说下响应系统
 
 数据响应主要是依据 ES5 的 getter 与 setter 来做数据变化的钩子处理，比如下面
-``` js
+
+```js
 Object.defineProperty(obj, key, {
   enumerable: true,
   configurable: true,
-  get: ()=>{
+  get: () => {
     // some handle
-    return val
+    return val;
   },
   set: newVal => {
-    if(newVal === val)
-      return
-    val = newVal
+    if (newVal === val) return;
+    val = newVal;
     //some handle
   }
-})
+});
 ```
+
 这样取值与赋值的过程中都可以做一些我们自己的处理，比如 set 的时候我们可以判断值是否真的发生了变化，变化了可以触发我们的重新渲染函数，做虚拟 DOM 比对处理更新界面
 
 不过说明下并不是一旦有数据变动我们就要做重新渲染，看这个例子
-``` js
- new Vue({
-      template: `
+
+```js
+new Vue({
+  template: `
         <div>
           <section>
             <span>name:</span> {{name}}
@@ -130,17 +145,18 @@ Object.defineProperty(obj, key, {
             <span>age:</span> {{age}}
           </section>
         <div>`,
-      data: {
-        name: 'js',
-        age: 24,
-        height: 180
-      }
-    })
+  data: {
+    name: "js",
+    age: 24,
+    height: 180
+  }
+});
 
-    setTimeout(function(){
-      demo.height = 181
-    }, 3000)
+setTimeout(function() {
+  demo.height = 181;
+}, 3000);
 ```
+
 可以看到 height 的变动与我们的模板完全无关，如果做重渲染会造成浪费，所以 Vue 做了一个收集依赖
 
 Vue 在第一次渲染的时候会读取需要的数据，所以它在 get 的时候做了手脚（依赖收集），后面只有依赖的数据变动才会触发重渲染
@@ -160,7 +176,8 @@ Vue 在第一次渲染的时候会读取需要的数据，所以它在 get 的�
 evo = easy + vue + o，快来帮我 star 吧~
 
 下面来个例子，跑起来
-``` js
+
+```js
 <div id="app">
     <div :message="message">{{ message }}</div>
 
@@ -208,4 +225,5 @@ evo = easy + vue + o，快来帮我 star 吧~
 
 </script>
 ```
+
 当然实现一个完整的东西还是有很多路要走的，希望大家都能越走越远，也能越走越近~
