@@ -1,5 +1,3 @@
-!/usr/bin/env sh
-
 # 确保脚本抛出遇到的错误
 set -e
 
@@ -12,7 +10,7 @@ cd ./dist
 # 如果是发布到自定义域名
 echo 'gmiam.com' > CNAME
 
-git init
+# git init
 git add -A
 git commit -m 'deploy'
 
