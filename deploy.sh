@@ -10,7 +10,7 @@ cd ./dist
 # 如果是发布到自定义域名
 echo 'gmiam.com' > CNAME
 
-# git init
+git init
 git add -A
 git commit -m 'deploy'
 
